@@ -76,6 +76,9 @@ def del_logger(func, path, error):
 def rm_tree(top):
     """shutil.rmtree seems to have problems with long path 
     names, rmdir and Remove-Item also.. so.. robocopy it is :-/"""
+    #ToDo - this is just a mess.. needs some serious clean up.. one day
+    if not exists("C:/empty"):
+        os.mkdir("C:/empty")
     pwsh_cmd1 = f'robocopy C:/empty "{top}" /purge'
     pwsh_result = subprocess.run(["powershell", "-Command", pwsh_cmd1], capture_output=True)
     shutil.rmtree(top, onerror=del_logger) 
