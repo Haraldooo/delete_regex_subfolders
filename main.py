@@ -64,7 +64,7 @@ def delete_folders(folder_list_file, dry_run):
 
 def del_logger(func, path, error):
     with open('./logger.log', "a+", encoding="utf-8") as f:
-        # poor man's logging
+        # very poor man's logging
         print(f"{datetime.datetime.now()} path: {path} -- error: {error}")
         print(f"{datetime.datetime.now()} path: {path} -- error: {error}", file=f)
 
