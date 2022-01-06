@@ -1,5 +1,8 @@
 from genericpath import exists
+from pathlib import Path
+import subprocess
 import os
+import stat
 import re
 import datetime
 import time
@@ -9,7 +12,7 @@ import click
 import sqlite3
 
 @click.command()
-@click.option("--top-dir", required=True,
+@click.option("--top-dir",
     help="Defines the top of the tree.. ")
 @click.option("--create-list", "-c", is_flag=True,
     help="Create folder list file.")
@@ -19,6 +22,9 @@ import sqlite3
 def main(top_dir, create_list, delete, dry_run):
     folder_list_file = "./folder-list.db"
     if (create_list):
+        if not top_dir:
+            click.echo("You need to specify --top-dir")
+            exit(-1)
         if exists(folder_list_file):
             click.echo("folder-list.db does already exist.")
             exit(-1)
@@ -31,7 +37,6 @@ def main(top_dir, create_list, delete, dry_run):
             exit(-1)
         else:
             delete_folders(folder_list_file, dry_run)
-
 
 
 
@@ -55,7 +60,7 @@ def delete_folders(folder_list_file, dry_run):
             if os.path.exists(item):
                 so_far += 1
                 if not dry_run:
-                    shutil.rmtree(item, onerror=del_logger)
+                    rm_tree(item)
                     cur.execute(f"UPDATE folder_list SET deleted = 1 WHERE rowid = {id}") # 1 = True
                 click.echo(f"{so_far}/{pending}")
                 con.commit()
@@ -63,12 +68,17 @@ def delete_folders(folder_list_file, dry_run):
 
 
 def del_logger(func, path, error):
+    "very poor man's logging"
     with open('./logger.log', "a+", encoding="utf-8") as f:
-        # very poor man's logging
         print(f"{datetime.datetime.now()} path: {path} -- error: {error}")
         print(f"{datetime.datetime.now()} path: {path} -- error: {error}", file=f)
 
-
+def rm_tree(top):
+    """shutil.rmtree seems to have problems with long path 
+    names, rmdir and Remove-Item also.. so.. robocopy it is :-/"""
+    pwsh_cmd1 = f'robocopy C:/empty "{top}" /purge'
+    pwsh_result = subprocess.run(["powershell", "-Command", pwsh_cmd1], capture_output=True)
+    shutil.rmtree(top, onerror=del_logger) 
     
 def create_folder_list_file(folder_list_file):
     con = sqlite3.connect(folder_list_file)
@@ -79,7 +89,7 @@ def create_folder_list_file(folder_list_file):
 
 
 def walk(top, maxdepth):
-    "Scannt den Verzeichnisbaum vollständig und gibt die obersten Verzeichnisse zurück"
+    "Scans the file system tree and returns only the top directories, should be"
     dirs, nondirs = [], []
     for entry in os.scandir(top):
         (dirs if entry.is_dir() else nondirs).append(entry.path)
@@ -94,14 +104,13 @@ def find_folders_to_delete(folder_list_file, top_dir):
     con = sqlite3.connect(folder_list_file)
     with con:
         cur = con.cursor()
-        "finds the folders "
         for x in walk(top_dir, 6):
             # EXAMPLE: Folders with 5-digit project numbers between 20.000 and < 42.000
             m_result = re.match("^(2\d{1}|3\d{1}|40|41)\d{3}_.*", os.path.basename(os.path.normpath(x)))
             if m_result:
                 modification_year = time.strftime('%Y', time.localtime(os.path.getmtime(x)))
                 # ignore folders that have been touched in the last three years.
-                if int(modification_year) < 2019:
+                if int(modification_year) < 2019 or int(modification_year) >= 2022:
                         print(f"{x} | {modification_year}")
                         cur.execute("INSERT INTO `folder_list` (folder, deleted) VALUES (?,?)", [x,False])
 
