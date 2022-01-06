@@ -3,7 +3,7 @@
 Simple python script to find subfolders in a large file system tree up to a maxdepth (path) and delete them based on a simple regex.
 The only python dependency is [click](https://github.com/pallets/click/)
 
-**Windows only** - uses robocopy to purge folder contents as apparently long folder names are not supportet in shutil.rmtree, Powershell's Remove-Item or rmdir /s /q. bummer. Should be very easily ported to posix systems.
+**Windows only right now** - uses robocopy to purge folder contents as apparently long folder names are not supportet in shutil.rmtree, Powershell's Remove-Item or rmdir /s /q. bummer. Should be very easily ported to posix systems.
 
 Please be sure to test before you use this. It's been written quickly to solve a urgent problem. 
 
