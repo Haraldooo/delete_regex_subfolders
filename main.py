@@ -75,7 +75,7 @@ def del_logger(func, path, error):
 
 def rm_tree(top):
     """shutil.rmtree seems to have problems with long path 
-    names, rmdir and Remove-Item also.. so.. robocopy it is :-/"""
+    names on windows, rmdir and Remove-Item (in PWSH 5.1) also.. so.. robocopy it is :-/"""
     #ToDo - this is just a mess.. needs some serious clean up.. one day
     if not exists("C:/empty"):
         os.mkdir("C:/empty")
@@ -113,7 +113,7 @@ def find_folders_to_delete(folder_list_file, top_dir):
             if m_result:
                 modification_year = time.strftime('%Y', time.localtime(os.path.getmtime(x)))
                 # ignore folders that have been touched in the last three years.
-                if int(modification_year) < 2019 or int(modification_year) >= 2022:
+                if int(modification_year) < 2019:
                         print(f"{x} | {modification_year}")
                         cur.execute("INSERT INTO `folder_list` (folder, deleted) VALUES (?,?)", [x,False])
 
